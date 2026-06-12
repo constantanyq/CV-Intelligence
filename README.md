@@ -15,7 +15,6 @@ A full-stack hackathon module that maps your realistic 5-year career trajectory,
 | Module | Audience | Status |
 |---|---|---|
 | C-01 · Career Path Navigator | Candidate | ✅ Primary |
-| C-02 · Living Portfolio | Candidate | ✅ Included |
 | E-01 · Smart Talent Matching | Employer | ✅ Included |
 
 ---
