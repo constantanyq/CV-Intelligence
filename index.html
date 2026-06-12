@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="style-base.css">
+  <link rel="stylesheet" href="style-components.css">
+  <link rel="stylesheet" href="style-features.css">
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-container">
+    <div class="auth-brand">
+      <div class="logo-mark lg">C</div>
+      <h1>Career OS</h1>
+      <p class="auth-tagline">C-01 · Career Path Navigator</p>
+      <p class="auth-desc">Navigate your career with clarity — not guesswork. A navigation tool that explains <em>why</em> each path makes sense.</p>
+      <div class="auth-features">
+        <div class="auth-feature"><i class="ti ti-route"></i> 5-year career trajectory</div>
+        <div class="auth-feature"><i class="ti ti-sparkles"></i> AI-powered CV enhancement</div>
+
+      </div>
+    </div>
+
+    <div class="auth-forms">
+      <!-- Login -->
+      <div id="auth-login" class="auth-form-panel active">
+        <h2>Sign in</h2>
+        <p class="auth-form-sub">Secure access to your career landscape</p>
+        <div id="login-error" class="auth-error" style="display:none"></div>
+        <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required autocomplete="email" placeholder="you@email.com">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="login-password" required autocomplete="current-password" minlength="8" oninput="clearAuthError('login-error')">
+              <button type="button" class="pw-toggle" onclick="togglePassword('login-password', this)" aria-label="Show password"><i class="ti ti-eye"></i></button>
+            </div>
+          </div>
+          <button type="submit" class="btn primary auth-submit" id="login-btn"><i class="ti ti-lock"></i> Sign in securely</button>
+        </form>
+        <p class="auth-switch">No account? <a href="#" onclick="showAuthForm('signup');return false">Create one</a></p>
+        <div class="auth-security-note">
+          <i class="ti ti-shield-lock"></i>
+          Secured with PBKDF2-SHA256 hashing, 24-hour sessions, login lockout after 5 failed attempts, and generic error messages (no account enumeration).
+        </div>
+      </div>
+
+      <!-- Signup -->
+      <div id="auth-signup" class="auth-form-panel">
+        <h2>Create account</h2>
+        <p class="auth-form-sub">Start mapping your career landscape</p>
+        <div id="signup-error" class="auth-error" style="display:none"></div>
+        <form id="signup-form" onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label for="signup-name">Full name</label>
+            <input type="text" id="signup-name" required autocomplete="name" placeholder="Alex Tan">
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" required autocomplete="email" placeholder="you@email.com">
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="signup-password" required autocomplete="new-password" placeholder="Min 8 chars, mixed case + number" minlength="8" oninput="checkPasswordStrength(this.value)">
+              <button type="button" class="pw-toggle" onclick="togglePassword('signup-password', this)" aria-label="Show password"><i class="ti ti-eye"></i></button>
+            </div>
+            <div id="pw-strength" class="pw-strength"></div>
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm">Confirm password</label>
+            <input type="password" id="signup-confirm" required autocomplete="new-password" placeholder="Re-enter password">
+          </div>
+          <button type="submit" class="btn primary auth-submit" id="signup-btn"><i class="ti ti-user-plus"></i> Create account</button>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="#" onclick="showAuthForm('login');return false">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="main-app" style="display:none">
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">C</div>
+    <div>
+      <div class="logo-text">Career OS <span class="module-badge">C-01</span></div>
+      <div class="logo-tagline">Career Path Navigator</div>
+    </div>
+  </div>
+  <div class="portal-switch">
+    <button class="psw-btn active cand" id="switch-candidate" onclick="switchPortal('candidate')">
+      <i class="ti ti-user"></i> Candidate
+    </button>
+    <button class="psw-btn emp" id="switch-employer" onclick="switchPortal('employer')">
+      <i class="ti ti-building"></i> Employer
+    </button>
+  </div>
+  <div class="topbar-right">
+    <span class="user-greeting" id="user-greeting">Welcome</span>
+    <button class="btn sm" onclick="cNav('settings')" title="API settings"><i class="ti ti-key"></i></button>
+    <button class="btn sm" onclick="handleLogout()"><i class="ti ti-logout"></i> Sign out</button>
+  </div>
+</header>
+
+<div id="portal-candidate" class="app-shell">
+
+  <nav class="sidebar">
+    <div class="sidebar-label"><span>Career Path Navigator</span></div>
+    <button class="nav-item active" id="cnav-upload"   onclick="cNav('upload')"><i class="ti ti-upload"></i>My CV</button>
+    <button class="nav-item"        id="cnav-timeline" onclick="cNav('timeline')"><i class="ti ti-timeline"></i>Career Path</button>
+
+    <button class="nav-item"        id="cnav-jobs"     onclick="cNav('jobs')"><i class="ti ti-search"></i>Job Listings</button>
+    <button class="nav-item"        id="cnav-saved"    onclick="cNav('saved')"><i class="ti ti-bookmark"></i>Saved Jobs <span class="nav-badge" id="saved-jobs-badge" style="display:none">0</span></button>
+    <button class="nav-item"        id="cnav-enhance"  onclick="cNav('enhance')"><i class="ti ti-sparkles"></i>Enhance CV</button>
+    <button class="nav-item"        id="cnav-fields"   onclick="cNav('fields')"><i class="ti ti-map"></i>Field Fit</button>
+    <button class="nav-item"        id="cnav-upskill"  onclick="cNav('upskill')"><i class="ti ti-rocket"></i>Upskill</button>
+    <div style="flex:1"></div>
+    <div class="sidebar-footer">A navigation tool — we explain why, not just what.</div>
+  </nav>
+
+  <main class="main">
+
+    <!-- PAGE: Upload CV -->
+    <div class="page active" id="cpage-upload">
+      <div class="pg-title">Upload your CV</div>
+      <div class="pg-sub">Paste your CV text or upload a file. Our AI reads your experiences to map your career landscape — not to judge, but to navigate.</div>
+
+      <div id="api-key-banner" class="api-banner demo" style="display:none">
+        <i class="ti ti-flask"></i>
+        <span><strong>Demo mode</strong> — all features work with sample AI responses. Optional: add an Anthropic API key in <a href="#" onclick="cNav('settings');return false">Settings</a> for live AI.</span>
+      </div>
+
+      <div class="upload-tabs">
+        <button class="upload-tab active" onclick="switchUploadTab('paste', this)"><i class="ti ti-clipboard"></i> Paste text</button>
+        <button class="upload-tab" onclick="switchUploadTab('file', this)"><i class="ti ti-file-upload"></i> Upload file</button>
+        <button class="upload-tab" onclick="loadSampleCV(this)"><i class="ti ti-file-text"></i> Load sample</button>
+      </div>
+
+      <div id="upload-paste-panel">
+        <textarea id="cv-text-input" class="cv-textarea" placeholder="Paste your CV text here…&#10;&#10;Include your education, experience, projects, and skills."></textarea>
+      </div>
+      <div id="upload-file-panel" style="display:none">
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('cv-file-input').click()">
+          <i class="ti ti-file-upload"></i>
+          <p>Drop your CV here, or click to browse</p>
+          <span>TXT, PDF, or DOCX · Max 5MB</span>
+        </div>
+        <input type="file" id="cv-file-input" accept=".txt,.pdf,.doc,.docx" style="display:none" onchange="handleFileUpload(this)">
+      </div>
+
+      <button class="btn primary" id="analyze-btn" onclick="analyzeCV()" style="margin-top:1rem">
+        <i class="ti ti-brain"></i> Analyse with AI
+      </button>
+
+      <div class="spinner-wrap" id="uploading">
+        <div class="spinner"></div>
+        <div class="spinner-text" id="upload-msg">Reading your CV…</div>
+      </div>
+
+      <div id="upload-done" style="display:none">
+        <div class="success-box">
+          <i class="ti ti-circle-check"></i>
+          <div>
+            <div class="title" id="cv-parse-title">CV analysed successfully</div>
+            <div class="sub" id="cv-parse-sub">Profile mapped</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
+          <button class="btn primary" onclick="cNav('timeline')"><i class="ti ti-timeline"></i>View Career Path</button>
+          <button class="btn" onclick="cNav('enhance')"><i class="ti ti-sparkles"></i>Enhance CV</button>
+          <button class="btn" onclick="cNav('jobs')"><i class="ti ti-search"></i>Browse Jobs</button>
+        </div>
+        <div class="section-divider">Detected from your CV</div>
+        <div class="chips-row" id="cv-skills-chips"></div>
+        <div id="cv-summary-box" class="info-note" style="margin-top:1rem"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Career Path Timeline -->
+    <div class="page" id="cpage-timeline">
+      <div class="pg-title">Your 5-year career path</div>
+      <div class="pg-sub">A realistic trajectory based on profiles similar to yours in Southeast Asia. This is navigation, not prediction — each step explains <em>why</em> it makes sense.</div>
+
+      <div id="timeline-empty" class="empty-state">
+        <i class="ti ti-route"></i>
+        <p>Upload your CV first to generate your personalised career path timeline.</p>
+        <button class="btn primary" onclick="cNav('upload')"><i class="ti ti-upload"></i>Upload CV</button>
+      </div>
+
+      <div id="timeline-content" style="display:none">
+        <div class="timeline-header-card widget">
+          <div class="timeline-target">
+            <span class="timeline-target-label">Target trajectory</span>
+            <span class="timeline-target-role" id="tl-target-role">—</span>
+          </div>
+          <div class="timeline-confidence" id="tl-confidence"></div>
+          <div class="timeline-why" id="tl-why"></div>
+          <div class="timeline-similar" id="tl-similar"></div>
+        </div>
+
+        <button class="btn primary" id="gen-timeline-btn" onclick="generateTimeline()" style="margin-bottom:1.25rem">
+          <i class="ti ti-refresh"></i> Regenerate with AI
+        </button>
+
+        <div class="career-timeline" id="career-timeline"></div>
+      </div>
+
+      <div class="spinner-wrap" id="timeline-loading">
+        <div class="spinner"></div>
+        <div class="spinner-text">Mapping career trajectories for similar profiles…</div>
+      </div>
+    </div>
+
+    <!-- PAGE: AI Career Coach -->
+    <!-- PAGE: Job Listings -->
+    <div class="page" id="cpage-jobs">
+      <div class="pg-title">Job listings</div>
+      <div class="pg-sub">10 curated roles across Malaysia, Singapore, and Indonesia — matched to your CV pattern. Search by title, company, skills, or location.</div>
+
+      <div class="job-search-bar">
+        <i class="ti ti-search"></i>
+        <input type="text" id="job-search" placeholder="Search jobs… e.g. Python, Grab, Singapore" oninput="filterJobs()">
+        <select id="job-filter-location" onchange="filterJobs()">
+          <option value="">All locations</option>
+          <option value="Singapore">Singapore</option>
+          <option value="Kuala Lumpur">Kuala Lumpur</option>
+          <option value="Jakarta">Jakarta</option>
+        </select>
+        <select id="job-filter-type" onchange="filterJobs()">
+          <option value="">All types</option>
+          <option value="Full-time">Full-time</option>
+          <option value="Internship">Internship</option>
+        </select>
+      </div>
+
+      <div id="job-results-count" class="job-count"></div>
+      <div id="job-list"></div>
+    </div>
+
+    <!-- PAGE: Saved Jobs -->
+    <div class="page" id="cpage-saved">
+      <div class="pg-title">Saved jobs</div>
+      <div class="pg-sub">Jobs you've bookmarked. Review fit scores and apply when you're ready — your application goes straight to the employer's pipeline.</div>
+
+      <div id="saved-jobs-empty" class="empty-state">
+        <i class="ti ti-bookmark-off"></i>
+        <p>No saved jobs yet. Browse listings and click <strong>Save</strong> on roles you want to track.</p>
+        <button class="btn primary" onclick="cNav('jobs')"><i class="ti ti-search"></i>Browse jobs</button>
+      </div>
+      <div id="saved-jobs-list"></div>
+    </div>
+
+    <!-- PAGE: Enhance CV -->
+    <div class="page" id="cpage-enhance">
+      <div class="pg-title">Enhance your CV</div>
+      <div class="pg-sub">AI rewrites your bullet points to signal impact — based on what you actually wrote, never inventing accomplishments.</div>
+
+      <div class="info-note" style="margin-bottom:1.125rem">
+        <i class="ti ti-shield-check" style="color:var(--green)"></i>
+        Career OS does not fabricate. Every enhanced line is a rephrasing of your original text, structured for ATS and hiring managers.
+      </div>
+
+      <div id="enhance-empty" class="empty-state">
+        <i class="ti ti-sparkles"></i>
+        <p>Upload your CV first, then we'll enhance your bullet points with AI.</p>
+        <button class="btn primary" onclick="cNav('upload')"><i class="ti ti-upload"></i>Upload CV</button>
+      </div>
+
+      <div id="enhance-content" style="display:none">
+        <button class="btn primary" id="enhance-btn" onclick="runEnhanceCV()" style="margin-bottom:1rem">
+          <i class="ti ti-sparkles"></i> Enhance all sections with AI
+        </button>
+        <div id="enhance-blocks"></div>
+        <button class="btn" style="margin-top:0.5rem" onclick="showCVPreview()"><i class="ti ti-file-text"></i>Preview enhanced CV</button>
+      </div>
+
+      <div class="spinner-wrap" id="enhance-loading">
+        <div class="spinner"></div>
+        <div class="spinner-text">AI is rephrasing your achievements…</div>
+      </div>
+    </div>
+
+    <!-- PAGE: Field Fit -->
+    <div class="page" id="cpage-fields">
+      <div class="pg-title">Field fit map</div>
+      <div class="pg-sub">Higher score = stronger signal of fit. Click any field to learn why it matches (or doesn't) your profile.</div>
+
+      <div class="field-desc-panel" id="field-desc-panel">
+        <div class="field-desc-title" id="fdp-title">Data Science</div>
+        <div class="field-desc-meta" id="fdp-meta">Score: 88 / 100 · Top match</div>
+        <div class="field-desc-body" id="fdp-body">Loading…</div>
+        <div class="field-desc-skills" id="fdp-skills"></div>
+      </div>
+
+      <div class="field-list" id="field-list"></div>
+
+      <div class="info-note"><i class="ti ti-info-circle"></i>Scores below 40 don't mean "impossible" — they mean your current CV doesn't yet signal strong fit. Skills and experience can move these numbers.</div>
+    </div>
+
+    <!-- PAGE: Upskill -->
+    <div class="page" id="cpage-upskill">
+      <div class="pg-title">Upskill tracker</div>
+      <div class="pg-sub">Pick a career field below to see your skill gaps and handpicked courses, workshops, and certifications to close them. Tick off what you've done.</div>
+
+      <div class="upskill-field-selector" id="upskill-field-selector">
+        <!-- populated by JS -->
+      </div>
+
+      <div id="upskill-content" style="display:none">
+        <div class="upskill-field-header" id="upskill-field-header"></div>
+        <div class="upskill-progress-row">
+          <div class="upskill-progress-label" id="upskill-progress-label">0 of 0 completed</div>
+          <div class="upskill-progress-track"><div class="upskill-progress-fill" id="upskill-progress-fill" style="width:0%"></div></div>
+          <div class="upskill-progress-pct" id="upskill-progress-pct">0%</div>
+        </div>
+        <div id="upskill-skill-blocks">
+          <!-- skill blocks injected by JS -->
+        </div>
+      </div>
+
+      <div id="upskill-empty" class="info-note" style="margin-top:1.5rem">
+        <i class="ti ti-hand-click"></i> Select a field above to load your personalised upskill plan.
+      </div>
+    </div>
+
+    <!-- PAGE: Settings -->
+    <div class="page" id="cpage-settings">
+      <div class="pg-title">Settings</div>
+      <div class="pg-sub">Configure your Anthropic API key to enable real AI features (CV parsing, enhancement, timeline generation).</div>
+
+      <div class="widget" style="max-width:520px">
+        <div class="widget-title"><i class="ti ti-key"></i> Anthropic API Key (optional)</div>
+        <div class="form-group">
+          <label for="api-key-input">API Key</label>
+          <div class="password-wrap">
+            <input type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off">
+            <button type="button" class="pw-toggle" onclick="togglePassword('api-key-input', this)"><i class="ti ti-eye"></i></button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" onclick="saveApiKey()"><i class="ti ti-device-floppy"></i> Save key</button>
+          <button class="btn" onclick="clearApiKey()"><i class="ti ti-trash"></i> Clear</button>
+        </div>
+        <div class="info-note" style="margin-top:1rem">
+          <i class="ti ti-info-circle"></i>
+          Your key is stored in session storage only (cleared when you close the browser). Get a key at <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>.
+        </div>
+        <div id="api-key-status" class="api-status"></div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- end candidate portal -->
+
+<!-- EMPLOYER PORTAL -->
+<div id="portal-employer" class="app-shell" style="display:none">
+
+  <nav class="sidebar">
+    <div class="sidebar-label"><span>Employer Portal</span></div>
+    <button class="nav-item active" id="enav-post"      onclick="eNav('post')"><i class="ti ti-file-description"></i>Post a Role</button>
+    <button class="nav-item"        id="enav-potential" onclick="eNav('potential')"><i class="ti ti-users"></i>Potential Candidates</button>
+    <button class="nav-item"        id="enav-applied"   onclick="eNav('applied')"><i class="ti ti-user-check"></i>Applied Candidates <span class="nav-badge" id="applied-cand-badge" style="display:none">0</span></button>
+    <div style="flex:1"></div>
+    <div class="sidebar-footer">Match is based on CV trajectory fit — not just keywords.</div>
+  </nav>
+
+  <main class="main">
+
+    <div class="page active" id="epage-post">
+      <div class="pg-title">Post a Role</div>
+      <div class="pg-sub">Describe the role and we'll surface candidates whose CV trajectory fits — not just keyword matches.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:700px">
+        <div>
+          <div class="form-group">
+            <label>Job Title</label>
+            <input id="e-title" value="Software Engineer – Full Stack" placeholder="e.g. Senior Backend Engineer">
+          </div>
+          <div class="form-group">
+            <label>Company Type</label>
+            <input id="e-company" value="SaaS Startup" placeholder="e.g. Fintech, Enterprise, Scale-up">
+          </div>
+          <div class="form-group">
+            <label>Seniority Level</label>
+            <select id="e-seniority">
+              <option value="junior">Junior (0–2 years)</option>
+              <option value="mid" selected>Mid (2–5 years)</option>
+              <option value="senior">Senior (5+ years)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="form-group">
+            <label>Critical Skills (comma-separated)</label>
+            <input id="e-skills" value="React, Node.js, PostgreSQL, System Design" placeholder="e.g. Python, AWS, Leadership">
+          </div>
+          <div class="form-group">
+            <label>Role Description (optional)</label>
+            <textarea id="e-desc" placeholder="Paste the job description or key responsibilities…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary" id="match-btn" onclick="runMatch()" style="margin-top:0.375rem">
+        <i class="ti ti-bolt"></i>Find Matching CVs
+      </button>
+
+      <div id="match-running" class="spinner-wrap" style="margin-top:1rem;padding:1.5rem">
+        <div class="spinner"></div>
+        <div class="spinner-text">Scanning CV trajectories…</div>
+      </div>
+
+      <div id="match-done" style="display:none;margin-top:1rem">
+        <div class="success-box">
+          <i class="ti ti-circle-check"></i>
+          <div>
+            <div class="title">3 candidates matched</div>
+            <div class="sub">Ranked by CV trajectory fit to your role</div>
+          </div>
+        </div>
+        <button class="btn" onclick="eNav('potential')"><i class="ti ti-users"></i>View Potential Candidates</button>
+      </div>
+    </div>
+
+    <div class="page" id="epage-potential">
+      <div class="pg-title">Potential candidates</div>
+      <div class="pg-sub">AI-surfaced candidates whose CV trajectory fits your role — ranked by fit %. Green skills match your critical skills list. These candidates have <em>not</em> applied yet.</div>
+
+      <div class="cand-cv-card">
+        <div class="cand-cv-header">
+          <div class="cand-avatar">AT</div>
+          <div>
+            <div class="cand-name">Alex Tan</div>
+            <div class="cand-headline">Junior Software Engineer · NUS Computer Science</div>
+          </div>
+          <div class="cand-fit-badge">
+            <div class="cand-fit-num">92</div>
+            <div class="cand-fit-label">CV fit</div>
+          </div>
+        </div>
+        <div class="cand-cv-body">
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Skills</div>
+            <div class="cand-skills-row">
+              <span class="skill-match">React</span>
+              <span class="skill-match">Node.js</span>
+              <span class="skill-match">PostgreSQL</span>
+              <span class="skill-neutral">AWS S3/EC2</span>
+              <span class="skill-neutral">REST APIs</span>
+              <span class="skill-neutral">Git</span>
+            </div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Experience</div>
+            <div class="cand-exp-line"><span class="cand-exp-title">Junior SWE – Vortex Systems</span> · 1.5 yrs · Built REST APIs handling 50k daily requests. Led PostgreSQL query optimisation (–40% load).</div>
+            <div class="cand-exp-line"><span class="cand-exp-title">Intern – Shopee Engineering</span> · 3 mo · Contributed to recommendation engine data pipeline using Python & SQL.</div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">CV Score Breakdown</div>
+            <div class="cand-score-bars">
+              <div class="cand-score-row"><div class="cand-score-lbl">Technical depth</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:82%"></div></div><div class="cand-score-num">82</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Achievements</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:88%"></div></div><div class="cand-score-num">88</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Leadership signals</div><div class="cand-bar-track"><div class="cand-bar-fill amber" style="width:48%"></div></div><div class="cand-score-num">48</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cand-cv-footer">
+          <div class="cand-cv-footer-top">
+            <div class="match-reason"><strong>Why matched:</strong> 3/4 critical skills confirmed on CV. PostgreSQL optimisation experience directly aligns with role.</div>
+            <button class="btn sm primary" onclick="showCandidateCV('AT','Alex Tan','Junior Software Engineer','NUS Computer Science')"><i class="ti ti-file-text"></i>Request CV</button>
+          </div>
+          <div class="trajectory-signal"><i class="ti ti-trending-up"></i><strong>Trajectory:</strong>&nbsp;Heading toward <span class="traj-target">Mid-level SWE / Tech Lead</span> in ~2–3 yrs — NUS grad, 1.5 yrs at Shopee-tier internship + current SWE role, leadership signals emerging. Likely actively looking in 6–12 months.</div>
+        </div>
+      </div>
+
+      <div class="cand-cv-card">
+        <div class="cand-cv-header">
+          <div class="cand-avatar" style="background:linear-gradient(135deg,#0F6E56,#178052)">PS</div>
+          <div>
+            <div class="cand-name">Priya Sharma</div>
+            <div class="cand-headline">Full Stack Developer · 3 yrs experience</div>
+          </div>
+          <div class="cand-fit-badge">
+            <div class="cand-fit-num">88</div>
+            <div class="cand-fit-label">CV fit</div>
+          </div>
+        </div>
+        <div class="cand-cv-body">
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Skills</div>
+            <div class="cand-skills-row">
+              <span class="skill-match">React</span>
+              <span class="skill-match">PostgreSQL</span>
+              <span class="skill-match">Node.js</span>
+              <span class="skill-neutral">TypeScript</span>
+              <span class="skill-neutral">Docker</span>
+              <span class="skill-neutral">Redis</span>
+            </div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Experience</div>
+            <div class="cand-exp-line"><span class="cand-exp-title">Full Stack Dev – FinEdge</span> · 3 yrs · Designed API layer for 5 microservices. Led 2-person frontend team. PostgreSQL schema owner.</div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">CV Score Breakdown</div>
+            <div class="cand-score-bars">
+              <div class="cand-score-row"><div class="cand-score-lbl">Technical depth</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:85%"></div></div><div class="cand-score-num">85</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Achievements</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:79%"></div></div><div class="cand-score-num">79</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Leadership signals</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:65%"></div></div><div class="cand-score-num">65</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cand-cv-footer">
+          <div class="cand-cv-footer-top">
+            <div class="match-reason"><strong>Why matched:</strong> Strong API design experience. PostgreSQL schema ownership signals depth. Team lead history is a bonus for mid-level role.</div>
+            <button class="btn sm primary" onclick="showCandidateCV('PS','Priya Sharma','Full Stack Developer','3 yrs experience')"><i class="ti ti-file-text"></i>Request CV</button>
+          </div>
+          <div class="trajectory-signal"><i class="ti ti-trending-up"></i><strong>Trajectory:</strong>&nbsp;Heading toward <span class="traj-target">Senior Full Stack / Engineering Lead</span> in ~1–2 yrs — 3 yrs at FinEdge, schema ownership + team lead signals. Likely open to senior title / growth opportunity now.</div>
+        </div>
+      </div>
+
+      <div class="cand-cv-card">
+        <div class="cand-cv-header">
+          <div class="cand-avatar" style="background:linear-gradient(135deg,#085041,#0F6E56)">JC</div>
+          <div>
+            <div class="cand-name">James Chen</div>
+            <div class="cand-headline">Senior Systems Engineer · 6 yrs experience</div>
+          </div>
+          <div class="cand-fit-badge">
+            <div class="cand-fit-num">85</div>
+            <div class="cand-fit-label">CV fit</div>
+          </div>
+        </div>
+        <div class="cand-cv-body">
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Skills</div>
+            <div class="cand-skills-row">
+              <span class="skill-match">Node.js</span>
+              <span class="skill-match">PostgreSQL</span>
+              <span class="skill-match">System Design</span>
+              <span class="skill-neutral">Kafka</span>
+              <span class="skill-neutral">Kubernetes</span>
+              <span class="skill-neutral">Go</span>
+            </div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">Experience</div>
+            <div class="cand-exp-line"><span class="cand-exp-title">Senior Engineer – Grab</span> · 4 yrs · Architected distributed systems handling 2M daily transactions. Mentored 3 junior engineers. Note: limited React depth on CV.</div>
+          </div>
+          <div class="cand-cv-section">
+            <div class="cand-cv-section-title">CV Score Breakdown</div>
+            <div class="cand-score-bars">
+              <div class="cand-score-row"><div class="cand-score-lbl">Technical depth</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:91%"></div></div><div class="cand-score-num">91</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Achievements</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:85%"></div></div><div class="cand-score-num">85</div></div>
+              <div class="cand-score-row"><div class="cand-score-lbl">Leadership signals</div><div class="cand-bar-track"><div class="cand-bar-fill" style="width:78%"></div></div><div class="cand-score-num">78</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cand-cv-footer">
+          <div class="cand-cv-footer-top">
+            <div class="match-reason"><strong>Why matched:</strong> Deep system design and backend expertise. React listed as a gap on their CV — may need frontend ramp-up.</div>
+            <button class="btn sm primary" onclick="showCandidateCV('JC','James Chen','Senior Systems Engineer','6 yrs experience · Grab')"><i class="ti ti-file-text"></i>Request CV</button>
+          </div>
+          <div class="trajectory-signal"><i class="ti ti-trending-up"></i><strong>Trajectory:</strong>&nbsp;Heading toward <span class="traj-target">Staff Engineer / Engineering Manager</span> in ~1 yr — 6 yrs exp, mentored 3 juniors, Grab-level architecture ownership. Likely not actively looking but reachable for the right senior scope.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="page" id="epage-applied">
+      <div class="pg-title">Applied candidates</div>
+      <div class="pg-sub">Candidates who applied through Career OS — ranked by role fit percentage. Review their profile and request their CV.</div>
+
+      <div id="applied-candidates-empty" class="empty-state">
+        <i class="ti ti-inbox"></i>
+        <p>No applications yet. When candidates save a job and click <strong>Apply</strong>, they appear here ranked by fit.</p>
+      </div>
+      <div id="applied-candidates-list"></div>
+    </div>
+
+  </main>
+</div><!-- end employer portal -->
+
+</div><!-- end main-app -->
+
+
+<!-- CANDIDATE CV MODAL (employer) -->
+<div class="modal-overlay" id="cand-cv-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-id-badge" style="vertical-align:-2px;margin-right:6px;color:var(--green)"></i>Candidate CV — <span id="cand-modal-name">Alex Tan</span></div>
+      <button class="modal-close" onclick="closeCandModal()">✕</button>
+    </div>
+    <div class="modal-body" id="cand-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCandModal()"><i class="ti ti-x"></i>Close</button>
+      <button class="btn primary" onclick="downloadCV()"><i class="ti ti-download"></i>Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- CV PREVIEW MODAL -->
+<div class="modal-overlay" id="cv-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ti ti-file-text" style="vertical-align:-2px;margin-right:6px;color:var(--green)"></i>Enhanced CV Preview</div>
+      <button class="modal-close" onclick="closeCVModal()">✕</button>
+    </div>
+    <div class="modal-body" id="cv-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCVModal()"><i class="ti ti-x"></i>Close</button>
+      <button class="btn primary" onclick="downloadCV()"><i class="ti ti-download"></i>Download</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="auth.js"></script>
+<script src="ai-service.js"></script>
+<script src="jobs-data.js"></script>
+<script src="app-auth.js"></script>
+<script src="app-portal.js"></script>
+<script src="app-cv.js"></script>
+<script src="app-jobs.js"></script>
+<script src="app-upskill.js"></script>
+</body>
+</html>
