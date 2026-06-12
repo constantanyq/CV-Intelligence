@@ -143,6 +143,7 @@ function cNav(id) {
   if (id === 'timeline' && cvUploaded && !timelineData) generateTimeline();
   if (id === 'enhance') initEnhancePage();
   if (id === 'upskill') initUpskillPage();
+  if (id === 'profile') renderProfile();
   if (id === 'settings') {
     document.getElementById('api-key-input').value = AIService.getApiKey();
     updateApiKeyStatus();

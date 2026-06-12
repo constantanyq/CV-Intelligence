@@ -602,3 +602,20 @@
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .user-greeting { font-size: 13px; font-weight: 600; color: var(--text2); }
 
+
+/* ══ Profile Page ══ */
+.profile-hero-card { border-radius: var(--radius-lg) !important; }
+
+.profile-avatar-lg {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), #059669);
+  color: #fff; font-size: 1.6rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; letter-spacing: 1px;
+}
+
+.profile-hero-name {
+  font-size: 1.35rem; font-weight: 700; color: var(--text1); line-height: 1.2;
+}
+
+.profile-future-title { font-size: 0.95rem; font-weight: 600; color: var(--green); margin: 6px 0 2px; }

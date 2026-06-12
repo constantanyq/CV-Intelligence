@@ -116,14 +116,14 @@
 
   <nav class="sidebar">
     <div class="sidebar-label"><span>Career Path Navigator</span></div>
-    <button class="nav-item active" id="cnav-upload"   onclick="cNav('upload')"><i class="ti ti-upload"></i>My CV</button>
+    <button class="nav-item active" id="cnav-profile"  onclick="cNav('profile')"><i class="ti ti-user-circle"></i>My Profile</button>
+    <button class="nav-item"        id="cnav-upload"   onclick="cNav('upload')"><i class="ti ti-upload"></i>My CV</button>
     <button class="nav-item"        id="cnav-timeline" onclick="cNav('timeline')"><i class="ti ti-timeline"></i>Career Path</button>
-
+    <button class="nav-item"        id="cnav-fields"   onclick="cNav('fields')"><i class="ti ti-map"></i>Field Fit</button>
     <button class="nav-item"        id="cnav-jobs"     onclick="cNav('jobs')"><i class="ti ti-search"></i>Job Listings</button>
     <button class="nav-item"        id="cnav-saved"    onclick="cNav('saved')"><i class="ti ti-bookmark"></i>Saved Jobs <span class="nav-badge" id="saved-jobs-badge" style="display:none">0</span></button>
-    <button class="nav-item"        id="cnav-enhance"  onclick="cNav('enhance')"><i class="ti ti-sparkles"></i>Enhance CV</button>
-    <button class="nav-item"        id="cnav-fields"   onclick="cNav('fields')"><i class="ti ti-map"></i>Field Fit</button>
     <button class="nav-item"        id="cnav-upskill"  onclick="cNav('upskill')"><i class="ti ti-rocket"></i>Upskill</button>
+    <button class="nav-item"        id="cnav-enhance"  onclick="cNav('enhance')"><i class="ti ti-sparkles"></i>Enhance CV</button>
     <div style="flex:1"></div>
     <div class="sidebar-footer">A navigation tool — we explain why, not just what.</div>
   </nav>
@@ -131,7 +131,7 @@
   <main class="main">
 
     <!-- PAGE: Upload CV -->
-    <div class="page active" id="cpage-upload">
+    <div class="page" id="cpage-upload">
       <div class="pg-title">Upload your CV</div>
       <div class="pg-sub">Paste your CV text or upload a file. Our AI reads your experiences to map your career landscape — not to judge, but to navigate.</div>
 
@@ -328,6 +328,57 @@
       </div>
     </div>
 
+
+    <!-- PAGE: My Profile -->
+    <div class="page active" id="cpage-profile">
+      <div class="pg-title">My Profile</div>
+      <div class="pg-sub">Your career snapshot — built from your CV analysis and field fit results.</div>
+
+      <div id="profile-empty" class="empty-state">
+        <i class="ti ti-user-circle"></i>
+        <p>Upload your CV first to generate your profile.</p>
+        <button class="btn primary" onclick="cNav('upload')"><i class="ti ti-upload"></i>Upload CV</button>
+      </div>
+
+      <div id="profile-content" style="display:none">
+        <!-- Top card: name + future title + avg score -->
+        <div class="widget profile-hero-card" style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;margin-bottom:1.25rem;padding:1.5rem 2rem">
+          <div class="profile-avatar-lg" id="profile-avatar-lg"></div>
+          <div style="flex:1;min-width:200px">
+            <div class="profile-hero-name" id="profile-hero-name">—</div>
+            <div class="profile-future-title" id="profile-future-title" style="color:var(--green);font-size:0.95rem;font-weight:600;margin:4px 0 2px"></div>
+            <div style="font-size:0.8rem;color:var(--text3)">Projected career target</div>
+          </div>
+          <div style="text-align:center">
+            <div class="profile-avg-ring" id="profile-avg-ring">
+              <svg width="96" height="96" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="var(--border)" stroke-width="8"/>
+                <circle id="profile-ring-arc" cx="48" cy="48" r="40" fill="none" stroke="var(--green)" stroke-width="8"
+                  stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"
+                  transform="rotate(-90 48 48)" style="transition:stroke-dashoffset 1s ease"/>
+                <text x="48" y="48" text-anchor="middle" dominant-baseline="central"
+                  style="font-size:20px;font-weight:700;fill:var(--text1)" id="profile-ring-text">—</text>
+              </svg>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text3);margin-top:4px">Avg. field score</div>
+          </div>
+        </div>
+
+        <!-- Skill Radar -->
+        <div class="widget" style="padding:1.5rem;margin-bottom:1.25rem">
+          <div style="font-weight:600;font-size:0.9rem;margin-bottom:1rem;color:var(--text1)">Skill Radar <span id="profile-radar-field" style="font-weight:400;color:var(--text3);font-size:0.8rem"></span></div>
+          <div style="display:flex;justify-content:center">
+            <svg id="profile-radar-svg" width="420" height="340" viewBox="0 0 420 340" style="max-width:100%"></svg>
+          </div>
+        </div>
+
+        <!-- Skills chips -->
+        <div class="widget" style="padding:1.25rem 1.5rem;margin-bottom:1.25rem">
+          <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.75rem;color:var(--text1)">Your CV Skills</div>
+          <div class="chips-row" id="profile-skills-chips"></div>
+        </div>
+      </div>
+    </div>
 
   </main>
 </div><!-- end candidate portal -->

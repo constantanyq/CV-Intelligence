@@ -384,3 +384,152 @@ function initEnhancePage() {
   }
 }
 
+
+// ══ Profile Page ══
+function renderProfile() {
+  if (!cvUploaded || !cvData) {
+    document.getElementById('profile-empty').style.display = 'flex';
+    document.getElementById('profile-content').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('profile-empty').style.display = 'none';
+  document.getElementById('profile-content').style.display = 'block';
+
+  // Name
+  const name = cvData.name || 'Candidate';
+  document.getElementById('profile-hero-name').textContent = name;
+
+  // Avatar initials
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  document.getElementById('profile-avatar-lg').textContent = initials;
+
+  // Future job title from timeline
+  let futureTitle = '—';
+  if (timelineData?.targetRole) {
+    futureTitle = timelineData.targetRole;
+  } else {
+    // Derive from top field
+    futureTitle = 'Senior Data Scientist / ML Engineer';
+  }
+  document.getElementById('profile-future-title').textContent = futureTitle;
+
+  // Average score from fields array (defined in jobs.js)
+  const avgScore = typeof fields !== 'undefined' && fields.length
+    ? Math.round(fields.reduce((s, f) => s + f.score, 0) / fields.length)
+    : 62;
+
+  document.getElementById('profile-ring-text').textContent = avgScore;
+  // Circumference = 2*pi*40 ≈ 251.2
+  const dashOffset = 251.2 - (251.2 * avgScore / 100);
+  setTimeout(() => {
+    document.getElementById('profile-ring-arc').setAttribute('stroke-dashoffset', dashOffset);
+    // Colour based on score
+    const colour = avgScore >= 70 ? 'var(--green)' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
+    document.getElementById('profile-ring-arc').setAttribute('stroke', colour);
+  }, 80);
+
+  // Skills chips
+  const chips = (cvData.skills || []).map(s => `<span class="chip">${s}</span>`).join('');
+  document.getElementById('profile-skills-chips').innerHTML = chips || '<span style="color:var(--text3);font-size:0.85rem">No skills detected — upload your CV.</span>';
+
+  // Radar chart — use top field skills or CV skills
+  renderSkillRadar();
+}
+
+function renderSkillRadar() {
+  const svg = document.getElementById('profile-radar-svg');
+  svg.innerHTML = '';
+
+  // Pick skills: top field skills vs CV skills — use top field if available
+  let radarSkills = [];
+  let fieldLabel = '';
+
+  if (typeof fields !== 'undefined' && fields.length) {
+    const topField = fields[0];
+    radarSkills = (topField.skills || []).slice(0, 6);
+    fieldLabel = '· ' + topField.name;
+  }
+
+  if (!radarSkills.length && cvData?.skills?.length) {
+    radarSkills = cvData.skills.slice(0, 6);
+  }
+
+  if (!radarSkills.length) {
+    radarSkills = ['Python', 'SQL', 'ML', 'Data Analysis', 'Statistics', 'Visualisation'];
+  }
+
+  document.getElementById('profile-radar-field').textContent = fieldLabel;
+
+  const n = radarSkills.length;
+  const cx = 210, cy = 170, r = 120;
+  const levels = 4;
+
+  // Derive scores: match CV skills to radar labels
+  const cvSkillsLower = (cvData?.skills || []).map(s => s.toLowerCase());
+  const scores = radarSkills.map(skill => {
+    const match = cvSkillsLower.some(cs =>
+      cs.includes(skill.toLowerCase().split('/')[0].trim()) ||
+      skill.toLowerCase().includes(cs.split(' ')[0])
+    );
+    return match ? (0.55 + Math.random() * 0.35) : (0.1 + Math.random() * 0.3);
+  });
+
+  function point(i, frac) {
+    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+    return { x: cx + r * frac * Math.cos(angle), y: cy + r * frac * Math.sin(angle) };
+  }
+
+  // Grid rings
+  for (let l = 1; l <= levels; l++) {
+    const frac = l / levels;
+    const pts = Array.from({ length: n }, (_, i) => point(i, frac));
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', 'var(--border)');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+  }
+
+  // Spokes
+  for (let i = 0; i < n; i++) {
+    const p = point(i, 1);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', p.x); line.setAttribute('y2', p.y);
+    line.setAttribute('stroke', 'var(--border)'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+
+  // Data polygon
+  const dataPts = scores.map((s, i) => point(i, s));
+  const area = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  area.setAttribute('points', dataPts.map(p => `${p.x},${p.y}`).join(' '));
+  area.setAttribute('fill', 'rgba(16,185,129,0.15)');
+  area.setAttribute('stroke', '#10b981');
+  area.setAttribute('stroke-width', '2');
+  svg.appendChild(area);
+
+  // Dots
+  dataPts.forEach(p => {
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', p.x); dot.setAttribute('cy', p.y);
+    dot.setAttribute('r', '4'); dot.setAttribute('fill', '#10b981');
+    svg.appendChild(dot);
+  });
+
+  // Labels
+  radarSkills.forEach((skill, i) => {
+    const p = point(i, 1.22);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', p.x); text.setAttribute('y', p.y);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('font-size', '12');
+    text.setAttribute('fill', 'var(--text2)');
+    text.setAttribute('font-family', 'inherit');
+    text.textContent = skill;
+    svg.appendChild(text);
+  });
+}
