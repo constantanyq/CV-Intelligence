@@ -193,40 +193,9 @@ function enterApp(user) {
   document.getElementById('main-app').style.display = 'block';
   document.getElementById('user-greeting').textContent = user.name.split(' ')[0];
   switchPortal(user.role || Auth.getSession()?.role || 'candidate');
-  updateApiKeyBanner();
   loadPersistedCV();
   renderFieldList();
   filterJobs();
   updateJobBadges();
-}
-
-// ── API Key ──
-function saveApiKey() {
-  const key = document.getElementById('api-key-input').value;
-  AIService.setApiKey(key);
-  updateApiKeyStatus();
-  updateApiKeyBanner();
-}
-
-function clearApiKey() {
-  AIService.setApiKey('');
-  document.getElementById('api-key-input').value = '';
-  updateApiKeyStatus();
-  updateApiKeyBanner();
-}
-
-function updateApiKeyStatus() {
-  const el = document.getElementById('api-key-status');
-  if (!el) return;
-  if (AIService.hasApiKey()) {
-    el.innerHTML = '<span class="api-ok"><i class="ti ti-circle-check"></i> Live AI enabled via Anthropic API</span>';
-  } else {
-    el.innerHTML = '<span class="api-missing"><i class="ti ti-flask"></i> Demo mode — prototype works without an API key</span>';
-  }
-}
-
-function updateApiKeyBanner() {
-  const banner = document.getElementById('api-key-banner');
-  if (banner) banner.style.display = AIService.hasApiKey() ? 'none' : 'flex';
 }
 
