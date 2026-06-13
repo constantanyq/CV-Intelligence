@@ -2,6 +2,21 @@
 // ── Jobs & applications ──
 const APPLICATIONS_KEY = 'careeros_applications';
 
+function calculateFitScore(roleSkills) {
+  if (!roleSkills || !roleSkills.length) return 75;
+  const candSkills = cvData?.skills || ['Python', 'SQL', 'Data analysis'];
+  const candSkillsLower = candSkills.map(s => s.toLowerCase());
+  let matches = 0;
+  roleSkills.forEach(rs => {
+    const rsL = rs.toLowerCase();
+    if (candSkillsLower.some(cs => cs.includes(rsL) || rsL.includes(cs))) {
+      matches++;
+    }
+  });
+  const pct = Math.round((matches / roleSkills.length) * 45) + 50;
+  return Math.min(98, Math.max(40, pct));
+}
+
 function getSavedJobIds() {
   const session = Auth.getSession();
   if (!session) return [];
@@ -57,7 +72,7 @@ function filterJobs() {
 }
 
 function saveJob(jobId) {
-  const job = JOBS.find(j => j.id === jobId);
+  const job = getActiveJobsList().find(j => j.id === jobId);
   if (!job) return;
   const session = Auth.getSession();
   if (!session) return;
@@ -81,7 +96,7 @@ function unsaveJob(jobId) {
 }
 
 function applyToJob(jobId) {
-  const job = JOBS.find(j => j.id === jobId);
+  const job = getActiveJobsList().find(j => j.id === jobId);
   if (!job) return;
   const session = Auth.getSession();
   if (!session) return;
@@ -150,16 +165,146 @@ function renderSavedJobs() {
   if (!savedIds.length) {
     if (empty) empty.style.display = 'block';
     list.innerHTML = '';
+  } else {
+    if (empty) empty.style.display = 'none';
+    const jobs = savedIds.map(id => getActiveJobsList().find(j => j.id === id)).filter(Boolean);
+    list.innerHTML = jobs.map(j => renderJobCard(j, {
+      mode: 'saved',
+      saved: true,
+      applied: applied.includes(j.id)
+    })).join('');
+  }
+}
+
+function renderPotentialJobs() {
+  const session = Auth.getSession();
+  if (!session) return;
+  
+  const container = document.getElementById('potential-jobs-list');
+  const section = document.getElementById('potential-jobs-section');
+  if (!container || !section) return;
+  
+  let interests = [];
+  try {
+    interests = JSON.parse(localStorage.getItem('careeros_recruiting_interests') || '[]');
+  } catch {
+    interests = [];
+  }
+  
+  const currentCandidateName = (typeof cvData !== 'undefined' && cvData?.name || session.name || '').toLowerCase().trim();
+  const myInvites = interests.filter(i => {
+    if (i.status !== 'invited') return false;
+    
+    // Direct ID match
+    if (i.candidateUserId === session.userId || i.candidateUserId === 'ME_' + session.userId) {
+      return true;
+    }
+    
+    // Name-based match for mock candidates ('AT', 'PS', 'JC')
+    if (currentCandidateName) {
+      if (i.candidateUserId === 'AT' && (currentCandidateName.includes('alex tan') || currentCandidateName.includes('wei ming'))) {
+        return true;
+      }
+      if (i.candidateUserId === 'PS' && (currentCandidateName.includes('priya') || currentCandidateName.includes('sharma'))) {
+        return true;
+      }
+      if (i.candidateUserId === 'JC' && (currentCandidateName.includes('james') || currentCandidateName.includes('chen'))) {
+        return true;
+      }
+      
+      // Generic name-based match
+      if (i.candidateName) {
+        const inviteName = i.candidateName.toLowerCase().trim();
+        if (inviteName.includes(currentCandidateName) || currentCandidateName.includes(inviteName)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  });
+  
+  section.style.display = 'block';
+  
+  if (!myInvites.length) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 1.5rem 1rem; border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg2);">
+        <i class="ti ti-mail-opened" style="font-size: 28px; margin-bottom: 8px; color: var(--text3);"></i>
+        <p style="margin-bottom: 0; font-size: 12px; color: var(--text2);">No interview invitations received yet. When employers invite you, they will appear here.</p>
+      </div>`;
     return;
   }
+  
+  section.style.display = 'block';
+  container.innerHTML = myInvites.map(inv => {
+    const activeJobs = getActiveJobsList();
+    const job = activeJobs.find(j => j.id === inv.roleId);
+    if (!job) return '';
+    
+    const fitClass = job.fit >= 85 ? 'fit-high' : job.fit >= 70 ? 'fit-med' : 'fit-low';
+    
+    return `
+      <div class="job-card" data-id="${job.id}" style="border: 1px solid var(--green-mid); background: rgba(16,185,129,0.02)">
+        <div style="background: var(--green-light); color: var(--green-dark); font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; align-self: start">
+          <i class="ti ti-calendar-event"></i><span>Interview Invitation Received</span>
+        </div>
+        <div class="job-card-header">
+          <div class="job-card-icon" style="background: var(--green-light); color: var(--green-dark)"><i class="ti ti-briefcase"></i></div>
+          <div class="job-card-info">
+            <div class="job-card-title">${escapeHtml(job.title)}</div>
+            <div class="job-card-meta">${escapeHtml(job.company)} · ${escapeHtml(job.location)} · ${escapeHtml(job.type)}</div>
+          </div>
+          <div class="job-fit-badge ${fitClass}">${job.fit}% fit</div>
+        </div>
+        <div class="job-card-salary"><i class="ti ti-currency-dollar"></i> ${escapeHtml(job.salary)}</div>
+        <div class="job-card-desc">${escapeHtml(job.desc)}</div>
+        <div class="job-card-skills">
+          ${job.skills.map(s => `<span class="job-skill-chip">${escapeHtml(s)}</span>`).join('')}
+        </div>
+        <div class="job-card-footer">
+          <span class="job-posted">${escapeHtml(job.posted)}</span>
+          <div class="job-card-actions">
+            <button class="btn sm" onclick="declinePotentialJob('${inv.id}')"><i class="ti ti-x"></i> Decline</button>
+            <button class="btn sm primary" onclick="applyToPotentialJob('${inv.id}', '${job.id}')"><i class="ti ti-check"></i> Accept & Apply</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
 
-  if (empty) empty.style.display = 'none';
-  const jobs = savedIds.map(id => JOBS.find(j => j.id === id)).filter(Boolean);
-  list.innerHTML = jobs.map(j => renderJobCard(j, {
-    mode: 'saved',
-    saved: true,
-    applied: applied.includes(j.id)
-  })).join('');
+function declinePotentialJob(inviteId) {
+  if (!confirm('Are you sure you want to decline this invitation?')) return;
+  try {
+    let interests = JSON.parse(localStorage.getItem('careeros_recruiting_interests') || '[]');
+    interests = interests.map(i => {
+      if (i.id === inviteId) {
+        return { ...i, status: 'declined' };
+      }
+      return i;
+    });
+    localStorage.setItem('careeros_recruiting_interests', JSON.stringify(interests));
+    renderPotentialJobs();
+    showToast('Invitation declined.');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function applyToPotentialJob(inviteId, jobId) {
+  applyToJob(jobId);
+  try {
+    let interests = JSON.parse(localStorage.getItem('careeros_recruiting_interests') || '[]');
+    interests = interests.map(i => {
+      if (i.id === inviteId) {
+        return { ...i, status: 'applied' };
+      }
+      return i;
+    });
+    localStorage.setItem('careeros_recruiting_interests', JSON.stringify(interests));
+    renderPotentialJobs();
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function renderAppliedCandidates() {
@@ -167,7 +312,18 @@ function renderAppliedCandidates() {
   const empty = document.getElementById('applied-candidates-empty');
   if (!container) return;
 
-  const apps = getAllApplications().sort((a, b) => b.fit - a.fit);
+  const roles = typeof getEmployerPostedRoles === 'function' ? getEmployerPostedRoles() : [];
+  if (!roles.length) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = 'none';
+    return;
+  }
+
+  const roleId = typeof selectedAppliedRoleId !== 'undefined' && selectedAppliedRoleId ? selectedAppliedRoleId : roles[0].id;
+
+  const apps = getAllApplications()
+    .filter(a => a.jobId === roleId)
+    .sort((a, b) => b.fit - a.fit);
 
   updateJobBadges();
 
@@ -184,11 +340,21 @@ function renderAppliedCandidates() {
     const rankLabel = i === 0 ? 'Top match' : `#${i + 1}`;
     const appliedDate = new Date(app.appliedAt).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
     const skillChips = (app.skills || []).slice(0, 6).map(s => {
-      const matched = JOBS.find(j => j.id === app.jobId)?.skills.some(js =>
+      const matched = getActiveJobsList().find(j => j.id === app.jobId)?.skills.some(js =>
         s.toLowerCase().includes(js.toLowerCase()) || js.toLowerCase().includes(s.toLowerCase())
       );
       return `<span class="${matched ? 'skill-match' : 'skill-neutral'}">${escapeHtml(s)}</span>`;
     }).join('');
+
+    // Fetch hiring statuses and check for 'interview_invited'
+    const hiringStatuses = typeof getHiringStatuses === 'function' ? getHiringStatuses() : [];
+    const hired = hiringStatuses.some(h => {
+      const cleanH = h.candId.startsWith('ME_') ? h.candId.slice(3) : h.candId;
+      const cleanC = app.candidateUserId.startsWith('ME_') ? app.candidateUserId.slice(3) : app.candidateUserId;
+      return cleanH === cleanC && h.roleId === roleId && h.status === 'interview_invited';
+    });
+    const hiredBadge = hired ? '<span class="conf-badge conf-high" style="margin-left:8px"><i class="ti ti-calendar-event"></i> Interview Invited</span>' : '';
+    const hireBtnText = hired ? '<i class="ti ti-calendar-check"></i>Hired / Interview Invited' : '<i class="ti ti-gift"></i>Interested in Hiring';
 
     return `
       <div class="cand-cv-card applied-cand">
@@ -196,7 +362,7 @@ function renderAppliedCandidates() {
           <div class="cand-rank-badge">${rankLabel}</div>
           <div class="cand-avatar">${initials}</div>
           <div>
-            <div class="cand-name">${escapeHtml(app.candidateName)}</div>
+            <div class="cand-name" style="display:flex;align-items:center">${escapeHtml(app.candidateName)} ${hiredBadge}</div>
             <div class="cand-headline">Applied for <strong>${escapeHtml(app.jobTitle)}</strong> · ${escapeHtml(app.company)}</div>
             <div class="cand-applied-date"><i class="ti ti-calendar"></i> Applied ${appliedDate}</div>
           </div>
@@ -222,8 +388,13 @@ function renderAppliedCandidates() {
           </div>
         </div>
         <div class="cand-cv-footer">
-          <div class="match-reason"><strong>Why this rank:</strong> ${escapeHtml(app.reason)}</div>
-          <button class="btn sm primary" onclick="showApplicantCV('${app.id}')"><i class="ti ti-file-text"></i>View application</button>
+          <div class="cand-cv-footer-top" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div class="match-reason" style="flex:1"><strong>Why this rank:</strong> ${escapeHtml(app.reason)}</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn sm primary" onclick="showApplicantCV('${app.id}')"><i class="ti ti-file-text"></i>View application</button>
+              <button class="btn sm" onclick="interestedInHiring('${app.candidateUserId}', '${roleId}')" ${hired ? 'disabled' : ''} style="background:var(--green-light);color:var(--green-dark);border-color:var(--green-mid)">${hireBtnText}</button>
+            </div>
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -234,7 +405,7 @@ function showApplicantCV(appId) {
   if (!app) return;
   document.getElementById('cand-modal-name').textContent = app.candidateName;
 
-  const job = JOBS.find(j => j.id === app.jobId);
+  const job = getActiveJobsList().find(j => j.id === app.jobId);
   let html = `<div class="cv-doc">
     <div class="cv-doc-name">${escapeHtml(app.candidateName)}</div>
     <div class="cv-doc-meta">${escapeHtml(app.candidateEmail)} · Applied ${new Date(app.appliedAt).toLocaleDateString()}</div>
@@ -354,7 +525,47 @@ const fields = [
   { name: 'Marketing / Growth', score: 31, fillClass: 'fill-red', tag: 'Low signal', tagClass: 'tag-low', top: false, salary: 'MYR 4–7k/mo', desc: 'Your data skills help with growth analytics, but marketing campaign experience is not yet signalled on your CV.', skills: ['SQL / analytics', 'Google Analytics', 'A/B testing', 'SEO / SEM'] }
 ];
 
+function loadUpskillProgressDirect() {
+  try { return JSON.parse(localStorage.getItem('careeros_upskill_progress') || '{}'); } catch { return {}; }
+}
+
+function updateFieldsInPlace() {
+  const progress = loadUpskillProgressDirect();
+  fields.forEach(f => {
+    if (f.baseScore === undefined) {
+      f.baseScore = f.score;
+    }
+    const fieldProgress = progress[f.name] || {};
+    const completedCount = Object.values(fieldProgress).filter(Boolean).length;
+    f.score = Math.min(100, f.baseScore + completedCount * 4);
+    
+    if (f.score >= 85) {
+      f.tag = 'Top match';
+      f.tagClass = 'tag-top';
+      f.fillClass = '';
+      f.top = true;
+    } else if (f.score >= 70) {
+      f.tag = 'Good fit';
+      f.tagClass = 'tag-good';
+      f.fillClass = 'fill-blue';
+      f.top = false;
+    } else if (f.score >= 50) {
+      f.tag = 'Moderate';
+      f.tagClass = 'tag-mid';
+      f.fillClass = 'fill-amber';
+      f.top = false;
+    } else {
+      f.tag = 'Low signal';
+      f.tagClass = 'tag-low';
+      f.fillClass = 'fill-red';
+      f.top = false;
+    }
+  });
+  fields.sort((a, b) => b.score - a.score);
+}
+
 function renderFieldList() {
+  updateFieldsInPlace();
   const container = document.getElementById('field-list');
   if (!container) return;
   container.innerHTML = '';

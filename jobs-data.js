@@ -123,9 +123,60 @@ const JOBS = [
   }
 ];
 
+function formatPostedDate(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+}
+
+function getActiveJobsList() {
+  const allJobs = [...JOBS];
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('careeros_posted_roles_')) {
+      try {
+        const roles = JSON.parse(localStorage.getItem(key) || '[]');
+        roles.forEach(role => {
+          if (!allJobs.some(j => j.id === role.id)) {
+            allJobs.push({
+              id: role.id,
+              title: role.title,
+              company: role.company,
+              location: role.location || 'Kuala Lumpur',
+              type: role.type || 'Full-time',
+              salary: role.salary || 'MYR 5,000 – 8,000/mo',
+              skills: role.skills || [],
+              fit: role.fit || 75,
+              posted: role.postedAt ? formatPostedDate(role.postedAt) : 'Just now',
+              desc: role.desc || ''
+            });
+          }
+        });
+      } catch (e) {
+        console.error('Error parsing posted roles from key ' + key, e);
+      }
+    }
+  }
+  
+  // Calculate dynamic fit scores if candidate CV is loaded
+  if (typeof cvUploaded !== 'undefined' && cvUploaded && typeof cvData !== 'undefined' && cvData) {
+    allJobs.forEach(job => {
+      job.fit = typeof calculateFitScore === 'function' ? calculateFitScore(job.skills) : (job.fit || 75);
+    });
+  }
+  
+  return allJobs;
+}
+
 function searchJobs(query, filters = {}) {
   const q = (query || '').toLowerCase().trim();
-  return JOBS.filter(job => {
+  return getActiveJobsList().filter(job => {
     if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
     if (filters.type && job.type !== filters.type) return false;
 

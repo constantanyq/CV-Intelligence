@@ -73,6 +73,81 @@ function persistCV() {
   }
 }
 
+function syncCompletedCoursesToCVSkills() {
+  if (!cvData) return;
+  if (!cvData.skills) cvData.skills = [];
+  
+  let progress = {};
+  try {
+    progress = JSON.parse(localStorage.getItem('careeros_upskill_progress') || '{}');
+  } catch {
+    progress = {};
+  }
+  
+  Object.keys(progress).forEach(fieldName => {
+    const fieldProgress = progress[fieldName] || {};
+    const d = typeof upskillData !== 'undefined' ? upskillData[fieldName] : null;
+    if (!d) return;
+    
+    Object.keys(fieldProgress).forEach(key => {
+      if (fieldProgress[key]) {
+        const parts = key.split('__');
+        if (parts.length === 3) {
+          const si = parseInt(parts[1], 10);
+          const ri = parseInt(parts[2], 10);
+          const resource = d.skills?.[si]?.resources?.[ri];
+          if (resource && resource.label) {
+            if (!cvData.skills.includes(resource.label)) {
+              cvData.skills.push(resource.label);
+            }
+          }
+        }
+      }
+    });
+  });
+}
+
+function resetCandidateViews() {
+  cvUploaded = false;
+  cvData = null;
+  enhancedData = null;
+  timelineData = null;
+  
+  // Reset Upload page
+  const textInput = document.getElementById('cv-text-input');
+  if (textInput) textInput.value = '';
+  const uploadDone = document.getElementById('upload-done');
+  if (uploadDone) uploadDone.style.display = 'none';
+  const pastePanel = document.getElementById('upload-paste-panel');
+  if (pastePanel) pastePanel.style.display = 'block';
+  const filePanel = document.getElementById('upload-file-panel');
+  if (filePanel) filePanel.style.display = 'none';
+  
+  document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+  const firstTab = document.querySelector('.upload-tab');
+  if (firstTab) firstTab.classList.add('active');
+  
+  // Reset Timeline page
+  const timelineContent = document.getElementById('timeline-content');
+  if (timelineContent) timelineContent.style.display = 'none';
+  const timelineEmpty = document.getElementById('timeline-empty');
+  if (timelineEmpty) timelineEmpty.style.display = 'block';
+  
+  // Reset Enhance page
+  const enhanceContent = document.getElementById('enhance-content');
+  if (enhanceContent) enhanceContent.style.display = 'none';
+  const enhanceEmpty = document.getElementById('enhance-empty');
+  if (enhanceEmpty) enhanceEmpty.style.display = 'block';
+  const enhanceBlocks = document.getElementById('enhance-blocks');
+  if (enhanceBlocks) enhanceBlocks.innerHTML = '';
+  
+  // Reset Profile page
+  const profileContent = document.getElementById('profile-content');
+  if (profileContent) profileContent.style.display = 'none';
+  const profileEmpty = document.getElementById('profile-empty');
+  if (profileEmpty) profileEmpty.style.display = 'flex';
+}
+
 function loadPersistedCV() {
   const session = Auth.getSession();
   if (!session) return;
@@ -80,13 +155,18 @@ function loadPersistedCV() {
     const saved = JSON.parse(localStorage.getItem('careeros_cv_' + session.userId) || 'null');
     if (saved?.cvData) {
       cvData = saved.cvData;
+      syncCompletedCoursesToCVSkills();
       enhancedData = saved.enhancedData || null;
       timelineData = saved.timelineData || null;
       cvUploaded = true;
       showCVResults(cvData);
       if (timelineData) renderTimeline(timelineData);
+    } else {
+      resetCandidateViews();
     }
-  } catch { /* ignore */ }
+  } catch {
+    resetCandidateViews();
+  }
 }
 
 async function analyzeCV() {
@@ -115,6 +195,7 @@ async function analyzeCV() {
       cvData = parseCVLocally(text);
     }
     cvUploaded = true;
+    syncCompletedCoursesToCVSkills();
     enhancedData = null;
     timelineData = null;
     persistCV();
@@ -123,6 +204,7 @@ async function analyzeCV() {
     alert('Analysis failed: ' + (err.message === 'NO_API_KEY' ? 'Add your API key in Settings.' : err.message));
     cvData = parseCVLocally(text);
     cvUploaded = true;
+    syncCompletedCoursesToCVSkills();
     showCVResults(cvData);
   } finally {
     clearInterval(tick);

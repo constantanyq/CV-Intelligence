@@ -396,6 +396,25 @@ function toggleUpskillItem(fieldName, si, ri, checked) {
   document.getElementById('upskill-progress-label').textContent = `${completedResources} of ${totalResources} resources completed`;
   document.getElementById('upskill-progress-fill').style.width = pct + '%';
   document.getElementById('upskill-progress-pct').textContent = pct + '%';
+
+  // CV Auto-update (add certification/skill to CV skills list)
+  if (cvUploaded && cvData) {
+    const resource = d.skills[si].resources[ri];
+    const courseName = resource.label;
+    if (!cvData.skills) cvData.skills = [];
+    
+    if (checked) {
+      if (!cvData.skills.includes(courseName)) {
+        cvData.skills.push(courseName);
+      }
+    } else {
+      cvData.skills = cvData.skills.filter(s => s !== courseName);
+    }
+    
+    if (typeof persistCV === 'function') persistCV();
+    if (typeof renderProfile === 'function') renderProfile();
+    if (typeof renderFieldList === 'function') renderFieldList();
+  }
 }
 
 // ── Init ──

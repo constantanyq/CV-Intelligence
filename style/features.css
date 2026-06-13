@@ -55,6 +55,17 @@
   margin-bottom: 1rem;
   line-height: 1.5;
 }
+.auth-success {
+  background: var(--green-light);
+  border: 1.5px solid var(--green-mid);
+  color: var(--green-dark);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
 .auth-security-note {
   font-size: 10.5px;
   color: var(--text3);
