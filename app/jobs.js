@@ -340,9 +340,10 @@ function renderAppliedCandidates() {
     const rankLabel = i === 0 ? 'Top match' : `#${i + 1}`;
     const appliedDate = new Date(app.appliedAt).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
     const skillChips = (app.skills || []).slice(0, 6).map(s => {
-      const matched = getActiveJobsList().find(j => j.id === app.jobId)?.skills.some(js =>
+      const job = getActiveJobsList().find(j => j.id === app.jobId);
+      const matched = job && job.skills ? job.skills.some(js =>
         s.toLowerCase().includes(js.toLowerCase()) || js.toLowerCase().includes(s.toLowerCase())
-      );
+      ) : false;
       return `<span class="${matched ? 'skill-match' : 'skill-neutral'}">${escapeHtml(s)}</span>`;
     }).join('');
 

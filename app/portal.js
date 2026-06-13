@@ -160,6 +160,52 @@ function runMatch() {
     const roles = getEmployerPostedRoles();
     roles.unshift(newRole);
     saveEmployerPostedRoles(roles);
+
+    // Seed mock applications for this new role
+    const getAllApps = window.getAllApplications || (() => { 
+      try { return JSON.parse(localStorage.getItem('careeros_applications') || '[]'); } catch { return []; } 
+    });
+    const saveApps = window.saveApplications || ((apps) => { 
+      localStorage.setItem('careeros_applications', JSON.stringify(apps)); 
+    });
+    
+    const apps = getAllApps();
+    
+    // Priya Sharma
+    const psSkills = ['React', 'PostgreSQL', 'Node.js', 'TypeScript', 'Docker', 'Redis', 'REST APIs', 'AWS RDS', 'Git'];
+    apps.push({
+      id: 'app_ps_' + Date.now(),
+      jobId: newRole.id,
+      jobTitle: newRole.title,
+      company: newRole.company,
+      candidateUserId: 'PS',
+      candidateName: 'Priya Sharma',
+      candidateEmail: 'priya.sharma@email.com',
+      fit: calculateFitScoreForCandidate(psSkills, newRole.skills),
+      skills: psSkills,
+      headline: 'Full Stack Developer · 3 yrs experience',
+      appliedAt: new Date(Date.now() - 3600000).toISOString(),
+      reason: 'Strong alignment with core technologies (React, Node.js, PostgreSQL). Exp in microservices and team leadership.'
+    });
+
+    // James Chen
+    const jcSkills = ['Node.js', 'PostgreSQL', 'System Design', 'Kafka', 'Kubernetes', 'Go', 'AWS', 'Distributed Systems', 'Microservices'];
+    apps.push({
+      id: 'app_jc_' + Date.now(),
+      jobId: newRole.id,
+      jobTitle: newRole.title,
+      company: newRole.company,
+      candidateUserId: 'JC',
+      candidateName: 'James Chen',
+      candidateEmail: 'james.chen@email.com',
+      fit: calculateFitScoreForCandidate(jcSkills, newRole.skills),
+      skills: jcSkills,
+      headline: 'Senior Systems Engineer · 6 yrs experience',
+      appliedAt: new Date(Date.now() - 7200000).toISOString(),
+      reason: 'Senior backend architect. Extensive distributed systems & microservices background. Solid NTU/Grab profile.'
+    });
+    
+    saveApps(apps);
     
     document.getElementById('e-title').value = '';
     document.getElementById('e-company').value = '';
